@@ -1,0 +1,10 @@
+D:\大學 資源\c#\MyDrawing\MyDrawing\bin\Debug\MyDrawing.exe.config
+D:\大學 資源\c#\MyDrawing\MyDrawing\bin\Debug\MyDrawing.exe
+D:\大學 資源\c#\MyDrawing\MyDrawing\bin\Debug\MyDrawing.pdb
+D:\大學 資源\c#\MyDrawing\MyDrawing\obj\Debug\MyDrawing.csproj.AssemblyReference.cache
+D:\大學 資源\c#\MyDrawing\MyDrawing\obj\Debug\MyDrawing.MyDrawing.resources
+D:\大學 資源\c#\MyDrawing\MyDrawing\obj\Debug\MyDrawing.Properties.Resources.resources
+D:\大學 資源\c#\MyDrawing\MyDrawing\obj\Debug\MyDrawing.csproj.GenerateResource.cache
+D:\大學 資源\c#\MyDrawing\MyDrawing\obj\Debug\MyDrawing.csproj.CoreCompileInputs.cache
+D:\大學 資源\c#\MyDrawing\MyDrawing\obj\Debug\MyDrawing.exe
+D:\大學 資源\c#\MyDrawing\MyDrawing\obj\Debug\MyDrawing.pdb
