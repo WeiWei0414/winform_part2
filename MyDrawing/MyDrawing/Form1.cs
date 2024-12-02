@@ -17,86 +17,93 @@ namespace MyDrawing
 {
     public partial class MyDrawing : Form
     {
-        public event EventHandler<ShapeEventArgs> OnAddShape; //新增圖案事件
-        public event EventHandler<int> OnDeleteShape;         //刪除圖案事件
-        
-        public MyDrawing()
+        Model model = new Model();
+        PresentationModel pModel;
+        Panel canva = new DoubleBufferedPanel();  //繪圖的地方
+
+        public Shape currentShape { get; private set; } //設定新增的shape
+        public MyDrawing(PresentationModel presentationModel)
         {
+            this.pModel= presentationModel;
             InitializeComponent();
-            SetupDataGridView();
-            Shape_dataGridView.CellClick += Shape_dataGridView_CellClick;
-           
+            SetupToolStrip();
+            pModel.ButtonStateChanged += pModel_ButtonStateChanged;
+            pModel.ButtonStateCancled += pModel_ButtonStateCancled;
+            //以下為panel的事件
+            canva.Parent = this;
+            canva.Dock = DockStyle.Fill;
+            canva.MouseDown += HandleCanvaPointerPressed;
+            canva.MouseUp += HandleCanvaPointerRealeased;
+            canva.MouseMove += HandleCanvaPointerMoved;
+            canva.Paint += HandleCanvaPaint;
+            model.ModelChanged += HandleModelChanged;
+
         }
-        private void SetupDataGridView()
+        private void SetupToolStrip()
         {
-            Shape_dataGridView.ReadOnly = true;
-            Shape_dataGridView.AutoGenerateColumns = false;
-            //新增刪除按鈕作為第一行
-            DataGridViewButtonColumn deleteButton = new DataGridViewButtonColumn();
-            deleteButton.Name = "Delete";
-            deleteButton.Text = "Delete";
-            deleteButton.UseColumnTextForButtonValue = true; //顯示按鈕文字
-            Shape_dataGridView.Columns.Add(deleteButton);
-            
-            //新增header
-
-            Shape_dataGridView.Columns.Add("Id", "ID");
-            Shape_dataGridView.Columns.Add("ShapeType", "Shape Type");
-            Shape_dataGridView.Columns.Add("Text", "Text");
-            Shape_dataGridView.Columns.Add("X", "X");
-            Shape_dataGridView.Columns.Add("Y", "Y");
-            Shape_dataGridView.Columns.Add("Height", "Height");
-            Shape_dataGridView.Columns.Add("Width", "Width");
-            Shape_dataGridView.Columns["ID"].DisplayIndex = 1;
-
-
-        }
-        private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
-        {
+            //設定toolstrip的四個按鈕的基本屬性
+            tool_Start.CheckOnClick = true;
+            tool_Terminator.CheckOnClick = true;
+            tool_Process.CheckOnClick = true;
+            tool_Decision.CheckOnClick = true;
+            tool_Start.Click += (sender, e) => pModel.SetButtonChecked("Start");
+            tool_Terminator.Click += (sender, e) => pModel.SetButtonChecked("Terminator");
+            tool_Process.Click += (sender, e) => pModel.SetButtonChecked("Process");
+            tool_Decision.Click += (sender, e) => pModel.SetButtonChecked("Decision");
 
         }
 
-        private void label2_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void MyDrawing_Load(object sender, EventArgs e)
-        {
-
-        }
 
         private void AddShape_Btn_Click(object sender, EventArgs e)
         {
-            //從ui取得資料
-            string shapeType = ShapeCombobox.SelectedItem.ToString();
+            string shapeType = "";
+          
             string content = textboxContent.Text;
-            int X = int.Parse(textBoxX.Text);
-            int Y = int.Parse(textBoxY.Text);
-            int H = int.Parse(textBoxH.Text);
-            int W = int.Parse(textBoxW.Text);
-
-            //通知controller 觸發新增事件
-            OnAddShape?.Invoke(this, new ShapeEventArgs
-            {
-                ShapeType = shapeType,
-                Text = content,
-                X = X,
-                Y = Y,
-                Height = H,
-                Width = W
-                
-            });
+            string X = textBoxX.Text;
+            string Y = textBoxY.Text;
+            string H = textBoxH.Text;
+            string W = textBoxW.Text;
             
-       
+            
+            if (ShapeCombobox.SelectedItem == null)
+            {
+                MessageBox.Show("請先選擇圖案");
+            }
+            else if (content == "")
+            {
+                MessageBox.Show("Please enter text");
+            }
+            else if (X == null || !int.TryParse(X, out _))
+            {
+                MessageBox.Show("Please enter correct X");
+            }
+            else if (Y == null || !int.TryParse(Y, out _))
+            {
+                MessageBox.Show("Please enter correct Y");
+            }
+            else if (H == null || !int.TryParse(H, out _))
+            {
+                MessageBox.Show("Please enter correct H");
+            }
+            else if (W == null || !int.TryParse(W, out _))
+            {
+                MessageBox.Show("Please enter correct W");
+            }
+            else
+            {
+                shapeType = ShapeCombobox.SelectedItem.ToString();
+                model.AddShape(shapeType, content, int.Parse(X), int.Parse(Y), int.Parse(H), int.Parse(W));
+                UpdateDataGridView();
+            }
         }
-        public void UpdateDataGridView(List<Shape> shapes)
+        public void UpdateDataGridView()
         {
-            Shape_dataGridView.Rows.Clear();
+            List<Shape> shapes = model.GetShapes();
+            shapeDataGridView.Rows.Clear();
             foreach(var shape in shapes)
             {   
-                Shape_dataGridView.Rows.Add(
-                    null,     //第一行為按鈕，所以資料給null
+                shapeDataGridView.Rows.Add(
+                    "刪除",     //第一行為按鈕，所以資料給null
                     shape.Id, 
                     shape.ShapeType, 
                     shape.Text, 
@@ -106,18 +113,77 @@ namespace MyDrawing
                     shape.Width);
             }
         }
-        private void Shape_dataGridView_CellClick(object sender,DataGridViewCellEventArgs e)
+
+        public void UpdateShape(Shape shape)
         {
-            if (e.ColumnIndex == Shape_dataGridView.Columns["Delete"].Index && e.RowIndex >= 0)
-            {
-                // 取得要刪除的行 ID
-                int id = (int)Shape_dataGridView.Rows[e.RowIndex].Cells["Id"].Value;
-
-                // 通知 Controller 執行刪除操作
-                OnDeleteShape?.Invoke(this, id);
-            }
-
+            currentShape = shape;
         }
 
+        private void shapeDataGridView_CellContentClick(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.ColumnIndex == shapeDataGridView.Columns["Delete"].Index && e.RowIndex >= 0)
+            {
+                int id = 0;
+                if (shapeDataGridView.Rows[e.RowIndex].Cells["Id"].Value == null)
+                {
+                    MessageBox.Show("erroe");
+                }
+                else
+                {
+                    id = (int)shapeDataGridView.Rows[e.RowIndex].Cells["Id"].Value;
+                }
+                model.DeleteShape(id);
+                UpdateDataGridView();
+
+            }
+        }
+        public void RefreashToolstrip()
+        {
+            tool_Start.Checked = pModel.isStartChecked;
+            tool_Process.Checked = pModel.isProcessChecked;
+            tool_Decision.Checked = pModel.isDecisionChecked;
+            tool_Terminator.Checked = pModel.isTerminatorChecked;
+            //canva.Cursor = Cursors.Default;
+        }
+        private void pModel_ButtonStateChanged(object sender, EventArgs e)
+        {
+            //從pmodel拿值過來更新ui
+            RefreashToolstrip();
+            canva.Cursor = Cursors.Cross;
+
+        }
+        private void pModel_ButtonStateCancled(object sender,EventArgs e)
+        {
+            canva.Cursor = Cursors.Default;
+        }
+        public void HandleCanvaPointerPressed(object sender,MouseEventArgs e)
+        {
+            if (pModel.CurrentType() != "null")
+            {
+                model.PointerPressed(pModel.CurrentType(), e.X, e.Y);
+            }
+        }
+        public void HandleCanvaPointerRealeased(object sender,MouseEventArgs e)
+        {
+            if(pModel.CurrentType() != "null")
+            {
+                model.PointerReleased(e.X, e.Y,model.GetNewShape());
+                RefreashToolstrip();
+                UpdateDataGridView();
+                canva.Cursor=Cursors.Default;
+            }
+        }
+        public void HandleCanvaPointerMoved(object sender,MouseEventArgs e)
+        {
+            model.PointerMoved(e.X, e.Y);
+        }
+        public void HandleCanvaPaint(object sender,PaintEventArgs e)
+        {
+            model.Draw(new presentationModel.WindowsFormsGraphicsAdaptor(e.Graphics));
+        }
+        public void HandleModelChanged()
+        {
+            Invalidate(true);
+        }
     }
 }

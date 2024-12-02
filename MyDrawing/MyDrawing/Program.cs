@@ -1,6 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
+using System.IO;
 using System.Linq;
+using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -16,11 +20,10 @@ namespace MyDrawing
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Model model = new Model();
-            MyDrawing form = new MyDrawing();
-            Controller controller = new Controller(form,model);
             
-            Application.Run(form);
+            
+            Application.Run(new MyDrawing(new PresentationModel(new Model())));
+            
         }
     }
 }

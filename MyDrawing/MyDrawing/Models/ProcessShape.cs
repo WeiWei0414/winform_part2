@@ -12,9 +12,10 @@ namespace MyDrawing.Models
         {
             ShapeType = "Process";
         }
-        public override void Display()
+        public override void Display(IGraphics graphics)
         {
-
+            graphics.DrawRectangle(X, Y, Width, Height);
+            graphics.DrawString(Text, X + Width / 2.5, Y + Height / 2.5);
         }
     }
 }

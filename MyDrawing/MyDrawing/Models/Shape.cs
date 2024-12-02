@@ -15,6 +15,6 @@ namespace MyDrawing.Models
         public int Y { get; set; }
         public int Width { get; set; }
         public int Height { get; set; }
-        public abstract void Display();
+        public abstract void Display(IGraphics graphics);
     }
 }

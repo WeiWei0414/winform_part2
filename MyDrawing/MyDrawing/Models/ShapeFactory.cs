@@ -6,9 +6,9 @@ using System.Threading.Tasks;
 
 namespace MyDrawing.Models
 {
-    public static  class ShapeFactory
+    internal class ShapeFactory
     {
-        public static Shape CreateShape(string ShapeType)
+        public Shape CreateShape(string ShapeType)
         {
             switch (ShapeType)
             {

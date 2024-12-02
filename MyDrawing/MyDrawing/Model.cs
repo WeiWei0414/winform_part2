@@ -5,45 +5,125 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Diagnostics;
+using System.Windows.Forms;
+
 
 namespace MyDrawing
 {
     
     public class Model
     {
-        private List<Shape> shapes;
-     
-        private  int newId = 1;
-
+        Shape newShape;  //新圖案
+        ShapeFactory factory;
+        Shapes shapes = new Shapes();  //存放shape的陣列
+        public event ModelChangedEventHandler ModelChanged;
+        public delegate void ModelChangedEventHandler();
+        double firstX = 0;
+        double firstY = 0;
+        bool isPressed = false;
+        double secondX = 0;
+        double secondY = 0;
+        
+        
         public Model()
         {
-            shapes = new List<Shape>();
-            
+            factory = new ShapeFactory(); //新增工廠
         }
-        public void AddShape(string shapeType, string text, int x, int y, int width, int height)
+        void NotifyModelChanged()
         {
-            Shape shape=ShapeFactory.CreateShape(shapeType); //使用工廠模式新增shape
-            shape.Id = newId++; // 設定id
-            shape.Text = text;
-            shape.X = x;
-            shape.Y = y;
-            shape.Width = width;
-            shape.Height = height;
+            if (ModelChanged != null)
+                ModelChanged();
+        }
 
-            shapes.Add(shape); //新增到存放shape的list
-        }
-        public void RemoveShape(int id) 
+        //取得新增的圖案
+        public Shape GetNewShape()
         {
-            var shape=shapes.FirstOrDefault(s => s.Id == id);
-            if (shape != null)
+            return newShape;
+        }
+        public void AddShape(string shapeType,string content,int x,int y,int width,int height)
+        {
+            shapes.AddShape(shapeType,content,x,y,width,height);
+            NotifyModelChanged();
+        }
+        public void DeleteShape(int id)
+        {
+            shapes.RemoveShape(id);
+            NotifyModelChanged();
+
+        }
+        public List<Shape> GetShapes()
+        {
+            return shapes.GetAllshapes();
+        }
+        public void PointerPressed(string type, double x, double y)
+        {
+            if (x > 0 && y > 0)
             {
-                shapes.Remove(shape);
+                this.newShape = factory.CreateShape(type);
+                
+                firstX = x;
+                firstY = y;
+                isPressed = true;
+                newShape.X = (int)x;
+                newShape.Y = (int)y;
+                newShape.Text = RandomText();
             }
-            
         }
-        public List<Shape> GetAllshapes() 
+        public void PointerMoved(double x, double y)
         {
-            return shapes;
+            if (isPressed)
+            {
+                secondX = x;
+                secondY = y;
+                NotifyModelChanged();
+            }
         }
+        public void PointerReleased(double x, double y, Shape newShape)
+        {
+            if (isPressed)
+            {
+                isPressed = false;
+                shapes.AddShape(newShape.ShapeType,newShape.Text,newShape.X,newShape.Y,newShape.Height,newShape.Width);
+                NotifyModelChanged();
+            }
+        }
+        public void Draw(IGraphics graphics)
+        {
+            graphics.ClearAll();
+
+            foreach (Shape item in shapes.GetAllshapes())  //shapes裡面存放shape 
+            {
+                item.Display(graphics);
+            }
+            if (isPressed)
+            {
+                double MinX = firstX < secondX ? firstX : secondX; //成立右 不成立則左
+                double MaxX = firstX < secondX ? secondX : firstX;
+                double MinY = firstY < secondY ? firstY : secondY;
+                double MaxY = firstY < secondY ? secondY : firstY;
+                this.newShape.X = (int)MinX;
+                this.newShape.Y = (int)MinY;
+                this.newShape.Height = (int)(MaxY - MinY);
+                this.newShape.Width = (int)(MaxX - MinX);
+                this.newShape.Display(graphics);
+            }
+        }
+        private string RandomText()
+        {
+            Random random = new Random();
+            int length = random.Next(3, 11);
+            const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
+            StringBuilder result = new StringBuilder(length);
+            for (int i = 0; i < length; i++)
+                result.Append(chars[random.Next(chars.Length)]);
+
+            return result.ToString();
+        }
+
+
+
+
+
     }
 }
